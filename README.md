@@ -1,4 +1,3 @@
 class-storage
 =============
-
-Allows the user to input and update their grades for individual courses, also giving ability to check their current percent, and a projected percent to get on the final exam to receive a range of grades by averaging the grades they have entered.
+Application is written in python 2.7.6, for windows. When script is ran, it will create and save to a folder called 'pickle files'(assuming there is not already a directory called that in the same directory as the script is saved) 
