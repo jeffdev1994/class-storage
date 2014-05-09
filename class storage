@@ -1,0 +1,634 @@
+import Tkinter
+import tkFont
+import pickle
+import tkMessageBox
+import os 
+from functools import partial
+
+
+
+class viewstaticclass(Tkinter.Tk):  
+    def __init__(self,parent,thefile):
+        Tkinter.Tk.__init__(self,None)
+        self.parent = parent
+        self.initialize(thefile)
+        
+    def initialize(self,thefile):
+        currentfile = open(os.getcwd() + '\pickle files\\' + thefile, 'r')
+        self.x = pickle.load(currentfile)
+
+        if self.x.midscores[0] == None :
+            Tkinter.Label(self, text= 'need to enter some\nscores first please!', font=tkFont.Font(size = 20),bg='#555555', fg='#33B1E6').place(x=78, y=85)
+            action1 = partial(self.on_button_change, thefile)
+            Tkinter.Button(self, text='change marks', command=action1).place(x=150,y=165)
+        else:
+            Tkinter.Label(self, text = "midterm scores",bg = '#555555',fg ='white',font=tkFont.Font(size = 15)).grid(sticky = 'W',pady = 10,padx=5)
+            for midnum in range(int(self.x.nummids)):
+                Tkinter.Label(self, text = self.x.midscores[midnum],bg = '#555555',fg ='white',font=tkFont.Font(size = 15)).grid(sticky = 'W',pady = 10,padx=5, column = (midnum+1),row = 0)
+            Tkinter.Label(self, text = "assign scores",bg = '#555555',fg ='white',font=tkFont.Font(size = 15)).grid(sticky = 'W',pady = 10,padx=5)   
+            for assignnum in range(int(self.x.numassigns)):
+                Tkinter.Label(self, text = self.x.assignscores[assignnum],bg = '#555555',fg ='white',font=tkFont.Font(size = 15)).grid(sticky = 'W',pady = 10,padx=5, column = (assignnum+1),row = 1)  
+            if self.x.numother != None and self.x.numother != 0:        
+                Tkinter.Label(self, text = "other scores",bg = '#555555',fg ='white',font=tkFont.Font(size = 15)).grid(sticky = 'W',pady = 10,padx=5)            
+                for othernum in range(int(self.x.numother)):
+                    Tkinter.Label(self, text = self.x.otherscores[othernum],bg = '#555555',fg ='white',font=tkFont.Font(size = 15)).grid(sticky = 'W',pady = 10,padx=5, column = (othernum+1),row = 2)              
+            self.calcbutton = Tkinter.Button(self,text='calculate %', command= self.calculate)
+            self.calcbutton.place(y=270, x= 10)
+            
+            self.projectbutton = Tkinter.Button(self,text = "projected %", command = self.projcalc)
+            self.projectbutton.place(y=270, x= 90)
+            self.thefile = thefile
+            
+            gradingscale = Tkinter.Button(self, text= 'grade scale', command = self.grade_scale, bg = '#33B1E6')
+            gradingscale.place(x= 172,y=270)
+    
+        self.homebutton = Tkinter.Button(self, text="home", command=self.go_home)
+        self.homebutton.pack()
+        self.homebutton.place(x=350, y= 5, width = 45)
+        
+        self.classbutton = Tkinter.Button(self,text="classes", command = self.go_class)
+        self.classbutton.pack()
+        self.classbutton.place(x=350, y= 35, width = 45)
+        
+        Tkinter.Button(self,text = "info", command =self.on_button_info).place(x=251,y=270,width=45)
+        
+    def on_button_info(self):
+        tkMessageBox.showinfo("info", "percent of 0 is treated as it has not\nbeen done yet.\nif percent is actually 0, replace\n1 for it")
+        
+
+    def on_button_change(self,thefile):
+        self.destroy()
+        app = changeclass(None, thefile)
+        app.title('my application')
+        app.configure(background = '#555555')
+        app.mainloop()    
+
+    
+    def grade_scale(self):
+        tkMessageBox.showinfo("UVic scale", "A+: 90\nA : 85 \nA-: 80 \nB+:77\nB :73\nB-:70\nC+:65\nC :60" )
+        
+    def projcalc(self):
+        midaverage = float(reduce(lambda x,y: x+y , self.x.midscores[:int(self.x.nummids)]))
+        midcount = 0.0
+        for j in self.x.midscores:
+             if j!= None and j!= 0:
+                 midcount += 1.0
+        if midcount == 0:
+            tkMessageBox.showinfo("projected", "you need atleast :\n1 midterm\n1 assignment\n1 other if there are others")
+        else:
+            midaverage = midaverage/midcount
+            
+            assignaverage = float(reduce(lambda x,y: x+y, self.x.assignscores[:int(self.x.numassigns)]))
+            assigncount= 0
+            for e in self.x.assignscores:
+                if e!=None and e !=0:
+                    assigncount += 1
+            if assigncount == 0:
+                tkMessageBox.showinfo("projected", "you need atleast :\n1 midterm\n1 assignment\n1 other if there are others")
+            else:
+                assignaverage = assignaverage/assigncount
+                
+                if self.x.numother != None and int(self.x.numother) != 0 and self.x.otherscores[1] != None:
+                    otheraverage = float(reduce((lambda x,y: x+y), self.x.otherscores[:int(self.x.numother)]))
+                    othercount = 0
+                    for f in self.x.otherscores:
+                        if f != None and f!= 0:
+                            othercount += 1
+                    print othercount
+                    try:
+                        otheraverage = otheraverage/othercount
+                        
+                    except ZeroDivisionError:
+                        tkMessageBox.showinfo("projected", "the next window will assume average of 0 for others")
+                        otheraverage = 0.0    
+                    for i in range(int(self.x.numother)):
+                        self.x.otherscores[i] = otheraverage
+                
+                for i in range(int(self.x.nummids)):
+                    self.x.midscores[i] = midaverage
+                
+                for i in range(int(self.x.numassigns)):
+                    self.x.assignscores[i] = assignaverage
+                    
+                midterms = 0
+                if self.x.nummids != None and int(self.x.nummids) !=0 and self.x.midscores[0] != None:
+                    midterms = float(self.x.permids)*(float(reduce((lambda x,y: x+y), self.x.midscores[:int(self.x.nummids)]))/(100*int(self.x.nummids)))
+                assigns = 0
+                if  int(self.x.numassigns) != 0 and self.x.assignscores[0] != None:
+                    assigns = float(self.x.perassigns)*(float(reduce((lambda x,y: x+y), self.x.assignscores[:int(self.x.numassigns)]))/(100*int(self.x.numassigns)))
+                other = 0
+                if self.x.numother != None and int(self.x.numother) != 0 and self.x.otherscores[0] != None: 
+                    other = float(self.x.perother)*(float(reduce((lambda x,y: x+y), self.x.otherscores[:int(self.x.numother)]))/(100*int(self.x.numother)))    
+                
+                if int(self.x.perfinal) > 0:
+                    overall = midterms + assigns + other
+                    Aplus = (90.0 - overall)/int(self.x.perfinal)
+                    A = (85.0 - overall)/int(self.x.perfinal)
+                    Aminus = (80.0 - overall)/int(self.x.perfinal)    
+                    Bplus = (77.0 - overall)/int(self.x.perfinal)
+                    B = (73.0 - overall)/int(self.x.perfinal)
+                    Bminus = (70.0 - overall)/int(self.x.perfinal)
+                    Cplus = (65.0 - overall)/int(self.x.perfinal)
+                    C = (60.0 - overall)/int(self.x.perfinal)
+                    tkMessageBox.showinfo("projected", "if you continue with your average, on the final you will need:\n%.2f to get an A+\n%.2f to get an A\n%.2f to get an A-\n%.2f to get a B+\n%.2f to get a B\n%.2f to get a B-\n%.2f to get a C+\n%.2f to get a C\n" %(Aplus*100,A*100,Aminus*100,Bplus*100,B*100,Bminus*100,Cplus*100,C*100))
+               
+                else:
+                    overall = midterms + assigns + other
+                    tkMessageBox.showinfo("projected", "if you continue with your average, you will get : %.2f" %overall)
+            
+        
+        
+    def calculate(self):
+        midterms = 0
+        if self.x.nummids != None and int(self.x.nummids) !=0 and self.x.midscores[0] != None:
+            midterms = float(self.x.permids)*(float(reduce((lambda x,y: x+y), self.x.midscores[:int(self.x.nummids)]))/(100*int(self.x.nummids)))
+        assigns = 0
+        if  int(self.x.numassigns) != 0 and self.x.assignscores[0] != None:
+            assigns = float(self.x.perassigns)*(float(reduce((lambda x,y: x+y), self.x.assignscores[:int(self.x.numassigns)]))/(100*int(self.x.numassigns)))
+        other = 0
+        if self.x.numother != None and int(self.x.numother) != 0 and self.x.otherscores[0] != None: 
+            other = float(self.x.perother)*(float(reduce((lambda x,y: x+y), self.x.otherscores[:int(self.x.numother)]))/(100*int(self.x.numother)))
+        
+        midcount = 0
+        for j in self.x.midscores:
+             if j!= None and j!= 0:
+                 midcount += 1
+                 
+        assigncount= 0
+        for e in self.x.assignscores:
+            if e!=None and e !=0:
+                assigncount += 1
+                
+        othercount = 0
+        for f in self.x.otherscores:
+            if f != None and f!= 0:
+                othercount += 1
+                
+        currentpercent = float(self.x.permids)*(midcount/float(self.x.nummids)) + float(self.x.perassigns)*(assigncount/float(self.x.numassigns))
+        if self.x.numother != None and self.x.perother != None:
+             currentpercent += float(self.x.perother)*(float(othercount/float(self.x.numother)))
+        currentpercent *= (1.0/100.0)
+        if currentpercent == 0:
+            tkMessageBox.showinfo("percent", "overall percent is : 0\ncurrent percent is : 0")
+        else:
+            currentpercent = (midterms + assigns + other) / currentpercent
+            tkMessageBox.showinfo("percent", "overall percent is : %.2f \ncurrent percent is : %.2f" %(midterms + assigns + other,currentpercent) )
+            	 
+            
+            
+        
+        
+        
+        
+    def go_home(self):
+        self.destroy()
+        app = startup(None)
+        app.title('my application')
+        app.geometry("350x250+350+175")
+        app.configure(background = '#555555')
+        app.mainloop()
+        
+    def go_class(self):
+        self.destroy()
+        app = viewclass(None)
+        app.title('my application')
+        app.geometry("450x300+350+175")
+        app.configure(background = '#555555')
+        app.mainloop()
+		
+		
+	
+class viewclass(Tkinter.Tk):  
+    def __init__(self,parent):
+        Tkinter.Tk.__init__(self,None)
+        self.parent = parent
+        self.initialize()
+        
+    def initialize(self):
+        self.path= os.getcwd() + "\pickle files"
+        picklefiles = os.listdir(self.path)
+        if len(picklefiles) == 0:
+            Tkinter.Label(self, text = 'you have no classes\nentered right now', bg ='#555555', fg = '#33B1E6',font = tkFont.Font(size = 20),justify='left'  ).place(x=20,y=30)
+            Tkinter.Button(self, text = "new class", command = self.NCwindow).place(x=100,y=110)
+        else:
+            for picklefile, r in zip(picklefiles, range(len(picklefiles))):
+                currentfile = open(os.getcwd() +'\pickle files\\' + picklefile, 'r')
+                x = pickle.load(currentfile)
+                action1 = partial(self.on_button_change, picklefile)
+                action2 = partial(self.on_button_view, picklefile)
+                action3 = partial(self.delete_button, picklefile)
+                Tkinter.Label(self, text = x.classname,bg ='#555555',fg ='white',font=tkFont.Font(size = 15)).grid(sticky = 'W',pady = 10,padx=5,row=r)
+                Tkinter.Button(self, text='change marks', command=action1).grid(pady=10,padx=5, row=r, column=1)
+                Tkinter.Button(self, text='view marks', command=action2).grid(pady=10,padx=5, row=r, column=2)
+                Tkinter.Button(self,text='delete', command=action3).grid(pady=10,padx=5,row=r, column=3)
+            
+            
+        self.backbutton = Tkinter.Button(self, text="home", command=self.go_home)
+        self.backbutton.pack()
+        self.backbutton.place(x=400, y= 5, width = 45)
+        
+ #       scrollbar = Tkinter.Scrollbar(self)
+#        scrollbar.pack(side = Tkinter.RIGHT, fill = Tkinter.Y)
+   #apparently this window doesn not like having a scroll bar...?? try another ide perhaps     
+        
+    def NCwindow(self):
+        self.destroy()
+        app = newclass(None)
+        app.title('my application')
+        app.geometry("475x400+350+175")
+        app.configure(background = '#555555')
+        app.mainloop()    
+
+    
+    def delete_button(self, thefile):
+        deletethis = os.getcwd() + '\pickle files\\' + thefile
+        os.remove(deletethis)
+        self.destroy()
+        app = viewclass(None)
+        app.title('my application')
+        app.geometry("450x300+350+175")
+        app.configure(background = '#555555')
+        app.mainloop()
+        
+        
+        
+    def go_home(self):
+        self.destroy()
+        app = startup(None)
+        app.title('my application')
+        app.geometry("350x250+350+175")
+        app.configure(background = '#555555')
+        app.mainloop()
+
+    def on_button_change(self,thefile):
+        self.destroy()
+        app = changeclass(None, thefile)
+        app.title('my application')
+        app.configure(background = '#555555')
+        app.mainloop()
+        
+    
+    def on_button_view(self,thefile):
+        self.destroy()
+        app = viewstaticclass(None,thefile)
+        app.title('my application')
+        app.geometry("400x300+350+175")
+        app.configure(background = '#555555')
+        app.mainloop()
+		
+		
+		
+class changeclass(Tkinter.Tk):  
+    def __init__(self,parent,thefile):
+        Tkinter.Tk.__init__(self,None)
+        self.parent = parent
+        self.initialize(thefile)
+        
+    def initialize(self,thefile):
+        self.thefile = thefile
+        currentfile = open(os.getcwd() + '\pickle files\\' + thefile, 'r')
+        self.x = pickle.load(currentfile)
+        currentfile.close()
+        if int(self.x.nummids) > 6 or int(self.x.numassigns) > 10 or (self.x.numother != None and int(self.x.numother) > 10):          
+            deletethis = os.getcwd() + '\pickle files\\' + thefile
+            os.remove(deletethis)
+            tkMessageBox.showinfo("Alert!", 'your over the max of:\n6 midterms\n10 assigns\n10 others\nthis class has been deleted')
+            self.destroy()            
+            app = viewclass(None)
+            app.title('my application')
+            app.geometry("450x300+350+175")
+            app.configure(background = '#555555')
+            app.mainloop()
+        else:    
+            if int(self.x.numassigns) > 7 or (self.x.numother != None and int(self.x.numother) > 7):
+                self.geometry('625x300+350+175')
+            else:
+                self.geometry("500x300+350+175")
+            Tkinter.Label(self, text = self.x.classname + "\n" + self.x.profname, bg = '#555555', fg = '#33B1E6').grid(sticky = 'W',padx = 5, pady=2,row=0)
+            Tkinter.Label(self, text = "midterm scores",bg = '#555555',fg ='white',font=tkFont.Font(size = 15)).grid(sticky = 'W',pady = 5,padx=5,row =1)
+            self.midvarlist = [Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar()]
+            for i in range(6):
+                if self.x.midscores[i] != None :
+                    self.midvarlist[i].set(self.x.midscores[i])
+                else:
+                    self.midvarlist[i].set(0)
+            for midnum in range(int(self.x.nummids)):
+                Tkinter.Entry(self, textvariable=self.midvarlist[midnum],width = 5).grid(sticky = 'W',pady = 10,padx=5, column = (midnum+1),row = 1)
+            Tkinter.Label(self, text = "assignment scores",bg = '#555555',fg ='white',font=tkFont.Font(size = 15)).grid(sticky = 'W',pady = 10,padx=5,row=2)
+            self.assignvarlist = [Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar()]        
+            for i in range(10):
+                if self.x.assignscores[i] != None :
+                    self.assignvarlist[i].set(self.x.assignscores[i])
+                else:
+                    self.assignvarlist[i].set(0)
+            for assignnum in range(int(self.x.numassigns)):
+                Tkinter.Entry(self, textvariable=self.assignvarlist[assignnum],width = 5).grid(sticky = 'W',pady = 10,padx=5, column = (assignnum+1),row = 2)
+            if self.x.numother != None and self.x.numother != 0 :
+                Tkinter.Label(self, text = "other scores",bg = '#555555',fg ='white',font=tkFont.Font(size = 15)).grid(sticky = 'W',pady = 10,padx=5,row=3)
+                self.othervarlist = [Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar(),Tkinter.IntVar()]
+                for i in range(10):
+                    if self.x.otherscores[i] != None :
+                        self.othervarlist[i].set(self.x.otherscores[i])
+                    else:
+                        self.othervarlist[i].set(0)            
+                for othernum in range(int(self.x.numother)):
+                    Tkinter.Entry(self, textvariable=self.othervarlist[othernum],width = 5).grid(sticky = 'W',pady = 10,padx=5, column = (othernum+1),row = 3)
+            
+            self.button = Tkinter.Button(self, text="submit", command=self.submit_button)
+            self.button.pack()
+            self.button.place(x = 435,y=250, height = 21)
+            
+            self.homebutton = Tkinter.Button(self, text="home", command=self.go_home)
+            self.homebutton.pack()
+            self.homebutton.place(x=450, y= 5, width = 45)
+            
+            self.classbutton = Tkinter.Button(self,text="classes", command = self.go_class)
+            self.classbutton.pack()
+            self.classbutton.place(x=450, y= 35, width = 45)
+        
+        
+    def submit_button(self): 
+        for i in range(int(self.x.nummids)):
+            self.x.midscores[i] = self.midvarlist[i].get()
+        
+        for i in range(int(self.x.numassigns)):
+            self.x.assignscores[i]= self.assignvarlist[i].get()
+        if self.x.numother != None and self.x.numother != 0 :
+            for i in range(int(self.x.numother)):
+                self.x.otherscores[i] = self.othervarlist[i].get()        
+        currentfile = open(os.getcwd() + '\pickle files\\' + self.thefile, 'wb')
+        pickle.dump(self.x, currentfile)
+        currentfile.close()
+        self.destroy()
+        app = viewclass(None)
+        app.title('my application')
+        app.geometry("450x300+350+175")
+        app.configure(background = '#555555')
+        app.mainloop()
+
+    def go_home(self):
+        self.destroy()
+        app = startup(None)
+        app.title('my application')
+        app.geometry("350x250+350+175")
+        app.configure(background = '#555555')
+        app.mainloop()
+        
+    def go_class(self):
+        self.destroy()
+        app = viewclass(None)
+        app.title('my application')
+        app.geometry("450x300+350+175")
+        app.configure(background = '#555555')
+        app.mainloop()
+		
+	
+		
+class storeclass():
+    def __init__(self, classname=None, profname=None, nummids=None, permids=None, numassigns=None, perassigns=None, numother=None, perother=None, perfinal=None):
+        self.classname = classname
+        self.profname = profname
+        self.nummids = nummids
+        self.permids = permids
+        self.numassigns = numassigns
+        self.perassigns = perassigns
+        self.numother = numother
+        self.perother = perother
+        self.perfinal = perfinal
+        self.midscores = [None,None,None,None,None,None]
+        self.assignscores = [None,None,None,None,None,None,None,None,None,None]
+        self.otherscores = [None,None,None,None,None,None,None,None,None,None]
+        self.finalscore = None
+        
+    def setmids(self, mid1=None, mid2=None, mid3=None, mid4=None, mid5=None, mid6=None):
+        self.midscores = [mid1, mid2,mid3,mid4,mid5,mid6]
+        
+        
+    def setassigns(self, a1=None,a2=None,a3=None,a4=None,a5=None,a6=None,a7=None,a8=None,a9=None,a10=None):
+        self.assignscores = [a1,a2,a3,a4,a5,a6,a7,a8,a9,a10]
+        
+        
+    def setother(self, o1=None,o2=None,o3=None,o4=None,o5=None,o6=None,o7=None,o8=None,o9=None,o10=None):
+        self.otherscores = [o1,o2,o3,o4,o5,o6,o7,o8,o9,o10]
+        
+        
+    def setfinal(self, score):
+        self.finalscore = score
+			
+		
+		
+class newclass(Tkinter.Tk):  
+    def __init__(self,parent):
+        Tkinter.Tk.__init__(self,None)
+        self.parent = parent
+        self.initialize()
+        
+    def initialize(self):    
+        
+        self.tag1 = Tkinter.Label(self,text="name of class",bg ='#555555',fg ='white',font=tkFont.Font(size = 12))
+        self.tag2 = Tkinter.Label(self,text="# of midterms",bg ='#555555',fg ='white',font=tkFont.Font(size = 12))
+        self.tag3 = Tkinter.Label(self,text="# of assigns",bg ='#555555',fg ='white',font=tkFont.Font(size = 12))
+        self.tag4 = Tkinter.Label(self,text="% of final",bg ='#555555',fg ='white',font=tkFont.Font(size = 12))        
+                
+        self.tag1.pack()
+        self.tag2.pack()
+        self.tag3.pack()
+        self.tag4.pack()
+        
+        self.tag1.place(y=10, x = 2)
+        self.tag2.place(y=80, x = 2)
+        self.tag3.place(y=150, x = 2)
+        self.tag4.place(y=220, x = 2)    
+        
+        self.tag1sub = Tkinter.Label(self,text="prof",bg ='#555555',fg ='white',font=tkFont.Font(size = 11))       
+        self.tag2sub = Tkinter.Label(self,text="% worth",bg ='#555555',fg ='white',font=tkFont.Font(size = 11))
+        self.tag3sub = Tkinter.Label(self,text="% worth",bg ='#555555',fg ='white',font=tkFont.Font(size = 11))        
+        
+        self.tag1sub.pack()        
+        self.tag2sub.pack()
+        self.tag3sub.pack()
+        
+        self.tag1sub.place(x= 67, y=35)
+        self.tag2sub.place(x = 41, y = 105)
+        self.tag3sub.place(x = 28, y = 175)
+        
+        self.ev1sub = Tkinter.StringVar()
+        self.ev2sub = Tkinter.IntVar()
+        self.ev3sub = Tkinter.IntVar()        
+
+        self.ev1 = Tkinter.StringVar()
+        self.ev2 = Tkinter.IntVar()
+        self.ev3 = Tkinter.IntVar()
+        self.ev4 = Tkinter.IntVar()
+        
+        self.entry1 = Tkinter.Entry(self, textvariable = self.ev1)
+        self.entry1sub = Tkinter.Entry(self, textvariable = self.ev1sub)
+        self.entry2 = Tkinter.Entry(self, textvariable = self.ev2)
+        self.entry2sub = Tkinter.Entry(self, textvariable = self.ev2sub)
+        self.entry3 = Tkinter.Entry(self, textvariable = self.ev3)
+        self.entry3sub = Tkinter.Entry(self, textvariable = self.ev3sub)
+        self.entry4 = Tkinter.Entry(self, textvariable = self.ev4)
+        
+        self.entry1sub.pack()
+        self.entry2sub.pack()
+        self.entry3sub.pack()
+        
+        self.entry1sub.place(x = 120, y = 35, width = 100)
+        self.entry2sub.place(x = 120, y= 105, width = 30)
+        self.entry3sub.place(x = 120, y= 175, width = 30)
+        
+        self.entry1.pack()
+        self.entry2.pack()
+        self.entry3.pack()
+        self.entry4.pack()
+        
+        self.entry1.place(x=120, y = 10, width = 200)
+        self.entry2.place(x=120, y = 80)
+        self.entry3.place(x=120, y = 150)
+        self.entry4.place(x=120, y = 220)
+        
+        self.extraV = Tkinter.IntVar()
+        self.extra = Tkinter.Checkbutton(self, text = "any other graded material?", command = self.on_check, bg ="#555555",fg ='white', selectcolor = 'blue', variable=self.extraV)
+        self.extra.pack()
+        self.extra.place(x = 5, y = 270)
+        self.extra.bind('<Return>', self.on_check)
+        
+        
+        self.button = Tkinter.Button(self, text="submit", command=self.on_button)
+        self.button.pack(side = Tkinter.RIGHT)
+        self.button.place(x = 200,y=270, height = 21)
+        
+        self.backbutton = Tkinter.Button(self, text="home", command=self.go_home)
+        self.backbutton.pack()
+        self.backbutton.place(x=420, y= 5, width = 45)
+        
+        Tkinter.Button(self, text="info", command=self.pop_info).place(x=420, y= 35, width = 45)
+        
+#        scrollbar = Tkinter.Scrollbar(self)
+#        scrollbar.pack(side = Tkinter.RIGHT, fill = Tkinter.Y)
+    
+    def pop_info(self):
+        tkMessageBox.showinfo("information", "max of:\n\n6 midterms\n10 assignments\n10 others")
+        
+    
+    def go_home(self):
+        self.destroy()
+        app = startup(None)
+        app.title('my application')
+        app.geometry("350x250+350+175")
+        app.configure(background = '#555555')
+        app.mainloop()        
+           
+    def on_button(self):
+        self.extra.flash()
+        if self.extraV.get() == 1:
+            newclass = storeclass(self.entry1.get(),self.entry1sub.get(),self.entry2.get(),self.entry2sub.get(),self.entry3.get(),self.entry3sub.get(),self.entryX.get(),self.entryXsub.get(),self.entry4.get())       
+            output = open(os.path.join(os.getcwd() + "\pickle files", newclass.classname +'.pkl'), 'wb')
+            pickle.dump(newclass, output)
+            output.close()
+            self.destroy()
+            app = startup(None)
+            app.title('my application')
+            app.geometry("350x250+350+175")
+            app.configure(background = '#555555')
+            app.mainloop()
+            
+        else:
+            newclass = storeclass(self.entry1.get(),self.entry1sub.get(),self.entry2.get(),self.entry2sub.get(),self.entry3.get(),self.entry3sub.get(),None,None,self.entry4.get())        
+            output = open(os.path.join(os.getcwd() + "\pickle files", newclass.classname +'.pkl'), 'wb')
+            pickle.dump(newclass, output)
+            output.close()
+            self.destroy()
+            app = startup(None)
+            app.title('my application')
+            app.geometry("350x250+350+175")
+            app.configure(background = '#555555')
+            app.mainloop()
+
+        
+    
+    def on_check(self, event = None):
+        self.extraV.set(1)
+        self.evX = Tkinter.IntVar()
+        self.entryX = Tkinter.Entry(self, textvariable = self.evX)
+        self.entryX.pack()
+        self.entryX.place(x = 120, y = 310)
+        
+        self.evXsub = Tkinter.IntVar()
+        self.entryXsub = Tkinter.Entry(self, textvariable = self.evXsub)
+        self.entryXsub.pack()
+        self.entryXsub.place(x = 120, y = 335, width = 30)
+        
+        self.tagX = Tkinter.Label(self,text="# of extra",bg ='#555555',fg ='white',font=tkFont.Font(size = 12))
+        self.tagX.pack()
+        self.tagX.place(x = 2, y = 310 )
+        
+        self.tagXsub = Tkinter.Label(self,text="% worth",bg ='#555555',fg ='white',font=tkFont.Font(size = 11))
+        self.tagXsub.pack()
+        self.tagXsub.place(x = 10, y = 335)
+				
+		
+		
+class startup(Tkinter.Tk):
+    def __init__(self,parent):
+        Tkinter.Tk.__init__(self,parent)
+        self.parent = parent
+        self.initialize()
+        
+        
+        
+    def initialize(self):
+#        self.entryVariable = Tkinter.StringVar()
+#        self.entry = Tkinter.Entry(self, textvariable = self.entryVariable)
+#        self.entry.pack()
+#        self.entry.place(x=10, y = 150)
+#        self.entry.bind("<Return>", self.on_enter)
+#        self.entryVariable.set("Enter text here.")
+        
+#        self.button = Tkinter.Button(self, text="Get", command=self.on_button)
+#        self.button.pack()
+#        self.button.place(x=140, y=150, height = 21)
+        
+        box1 = Tkinter.Button(self, text = "new class", command = self.NCwindow, font = tkFont.Font(size=16) )
+        box1.pack(side = Tkinter.LEFT, padx = 5, pady = 3)
+        box1.place(x=10, y=10, height = 50, width = 200)
+        
+        box2 = Tkinter.Button(self, text = "current classes", command = self.VCwindow, font = tkFont.Font(size=16) )
+        box2.pack(side = Tkinter.LEFT, padx = 5, pady = 3)
+        box2.place(x=10, y=80, height = 50, width = 200)
+        
+        gradingscale = Tkinter.Button(self, text= 'UVic grading scale', command = self.grade_scale, bg = '#33B1E6', font = tkFont.BOLD)
+        gradingscale.place(x=10,y=150)
+        
+#        scrollbar = Tkinter.Scrollbar(self)
+#        scrollbar.pack(side = Tkinter.RIGHT, fill = Tkinter.Y)
+        
+    def grade_scale(self):
+        tkMessageBox.showinfo("UVic scale", "A+: 90\nA : 85 \nA-: 80 \nB+:77\nB :73\nB-:70\nC+:65\nC :60" )
+    
+    def NCwindow(self):
+        self.destroy()
+        app = newclass(None)
+        app.title('my application')
+        app.geometry("475x400+350+175")
+        app.configure(background = '#555555')
+        app.mainloop()
+        
+    def VCwindow(self):
+        self.destroy()
+        app = viewclass(None)
+        app.title('my application')
+        app.geometry("450x300+350+175")
+        app.configure(background = '#555555')
+        app.mainloop()
+        
+        
+if __name__ == "__main__":
+    check = os.listdir(os.getcwd())
+    if 'pickle files' not in check:
+        os.mkdir(os.getcwd() + "\pickle files")
+    app = startup(None)
+    app.title('my application')
+    app.geometry("350x250+350+175")
+    app.configure(background = '#555555')
+    app.mainloop()
